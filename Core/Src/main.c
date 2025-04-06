@@ -28,10 +28,11 @@ void computeGyro(void);
 
 uint8_t accelBytes[6];
 uint8_t gyroBytes[6];
-
-int16_t accel[3];
-int16_t gyro[3];
+uint8_t idCheck;
+#define LMS_ID 0b01101000
 int status;
+float accel[3];
+float gyro[3];
 
 /**
   * @brief  The application entry point.
@@ -44,29 +45,41 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI3_Init();
 
-  // status = Enable_XL_G();
-
-  while (1) {
-	  readXL(accelBytes);
-	  readGyro(gyroBytes);
-	  computeAccel();
-	  computeGyro();
-	  HAL_Delay(1000);
+  AG_Who_Am_I(&idCheck);
+  status = Enable_XL_G();
+  if (idCheck == LMS_ID && status) {
+	  while (1) {
+		  readXL(accelBytes);
+		  readGyro(gyroBytes);
+		  computeAccel();
+		  computeGyro();
+		  HAL_Delay(1000);
+	  }
   }
 }
 
 void computeAccel() {
 	// Combine LSB & MSB and convert to signed int (via two's complement)
-	accel[0] = (int16_t) (accelBytes[1] << 8 | accelBytes[0]);
-	accel[1] = (int16_t) (accelBytes[3] << 8 | accelBytes[2]);
-	accel[2] = (int16_t) (accelBytes[5] << 8 | accelBytes[4]);
+	int16_t raw_x = (int16_t) (accelBytes[1] << 8 | accelBytes[0]);
+	int16_t raw_y = (int16_t) (accelBytes[3] << 8 | accelBytes[2]);
+	int16_t raw_z = (int16_t) (accelBytes[5] << 8 | accelBytes[4]);
+
+	// Divide by default sensitivity of the accelerometer
+	accel[0] = raw_x/16384.0f;
+	accel[1] = raw_y/16384.0f;
+	accel[2] = raw_z/16384.0f;
 }
 
 void computeGyro() {
 	// Combine LSB & MSB and convert to signed int (via two's complement)
-	gyro[0] = (int16_t) (gyroBytes[1] << 8 | gyroBytes[0]);
-	gyro[1] = (int16_t) (gyroBytes[3] << 8 | gyroBytes[2]);
-	gyro[2] = (int16_t) (gyroBytes[5] << 8 | gyroBytes[4]);
+	int16_t roll = (int16_t) (gyroBytes[1] << 8 | gyroBytes[0]);
+	int16_t pitch = (int16_t) (gyroBytes[3] << 8 | gyroBytes[2]);
+	int16_t yaw = (int16_t) (gyroBytes[5] << 8 | gyroBytes[4]);
+
+	// Divide by default sensitivity of the gyroscope
+	gyro[0] = roll/8.75f;
+	gyro[1] = pitch/8.75f;
+	gyro[2] = yaw/8.75f;
 }
 
 /**
