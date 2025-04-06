@@ -1,0 +1,7 @@
+../Core/Src/lms.c:11:6:AG_SingleByte_Write	24	static
+../Core/Src/lms.c:24:6:AG_Read	16	static
+../Core/Src/lms.c:34:6:reboot	8	static
+../Core/Src/lms.c:38:6:Enable_XL_G	8	static
+../Core/Src/lms.c:43:6:AG_Who_Am_I	16	static
+../Core/Src/lms.c:48:6:readXL	16	static
+../Core/Src/lms.c:52:6:readGyro	16	static

@@ -20,16 +20,18 @@
 #include "main.h"
 #include "spi.h"
 #include "gpio.h"
+#include "lms.h"
 
 void SystemClock_Config(void);
+void computeAccel(void);
+void computeGyro(void);
 
-#define READ_FLAG 0x80
-#define MULTIBYTE_FLAG 0x40
-#define AG_CS_PORT GPIOB
-#define AG_CS_PIN GPIO_PIN_6
+uint8_t accelBytes[6];
+uint8_t gyroBytes[6];
 
-uint8_t txData = 0x0F;
-uint8_t rxData;
+int16_t accel[3];
+int16_t gyro[3];
+int status;
 
 /**
   * @brief  The application entry point.
@@ -41,17 +43,30 @@ int main(void)
   SystemClock_Config();
   MX_GPIO_Init();
   MX_SPI3_Init();
-  txData |= READ_FLAG;
+
+  // status = Enable_XL_G();
 
   while (1) {
-	  HAL_GPIO_WritePin(AG_CS_PORT, AG_CS_PIN, GPIO_PIN_RESET);
-	  HAL_Delay(50);
-	  HAL_SPI_Transmit(&hspi3, &txData, 1, HAL_MAX_DELAY);
-	  HAL_SPI_Receive(&hspi3, &rxData, 1, HAL_MAX_DELAY);
-	  HAL_Delay(50);
-	  HAL_GPIO_WritePin(AG_CS_PORT, AG_CS_PIN, GPIO_PIN_SET);
-	  HAL_Delay(900);
+	  readXL(accelBytes);
+	  readGyro(gyroBytes);
+	  computeAccel();
+	  computeGyro();
+	  HAL_Delay(1000);
   }
+}
+
+void computeAccel() {
+	// Combine LSB & MSB and convert to signed int (via two's complement)
+	accel[0] = (int16_t) (accelBytes[1] << 8 | accelBytes[0]);
+	accel[1] = (int16_t) (accelBytes[3] << 8 | accelBytes[2]);
+	accel[2] = (int16_t) (accelBytes[5] << 8 | accelBytes[4]);
+}
+
+void computeGyro() {
+	// Combine LSB & MSB and convert to signed int (via two's complement)
+	gyro[0] = (int16_t) (gyroBytes[1] << 8 | gyroBytes[0]);
+	gyro[1] = (int16_t) (gyroBytes[3] << 8 | gyroBytes[2]);
+	gyro[2] = (int16_t) (gyroBytes[5] << 8 | gyroBytes[4]);
 }
 
 /**

@@ -1,0 +1,7 @@
+../Core/Src/lms.c:11:6:AG_SingleByte_Write	2
+../Core/Src/lms.c:24:6:AG_Read	1
+../Core/Src/lms.c:34:6:reboot	1
+../Core/Src/lms.c:38:6:Enable_XL_G	1
+../Core/Src/lms.c:43:6:AG_Who_Am_I	1
+../Core/Src/lms.c:48:6:readXL	1
+../Core/Src/lms.c:52:6:readGyro	1
