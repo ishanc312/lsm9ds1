@@ -5,8 +5,7 @@
  *      Author: ishanchitale
  */
 
-#include "lms.h"
-#include "spi.h"
+#include "lsm.h"
 
 void initLSM(LSM* IMU, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t AG_PIN) {
 	IMU->spiInstance = spi;
@@ -73,9 +72,9 @@ void readGyro(LSM* IMU) {
 	AG_Read(IMU, 0x18, IMU->gyroBytes, 6);
 }
 
-// Computation Helper Functions
+// Computation/Calibration Helper Functions
 
-void computeAccel(LSM* IMU) {
+void computeRawAccel(LSM* IMU) {
 	// Combine LSB & MSB and convert to signed int (via two's complement)
 	int16_t raw_x = (int16_t) (IMU->accelBytes[1] << 8 | IMU->accelBytes[0]);
 	int16_t raw_y = (int16_t) (IMU->accelBytes[3] << 8 | IMU->accelBytes[2]);
@@ -87,7 +86,7 @@ void computeAccel(LSM* IMU) {
 	IMU->accel[2] = raw_z/ACCEL_SENS_2G;
 }
 
-void computeGyro(LSM* IMU) {
+void computeRawGyro(LSM* IMU) {
 	// Combine LSB & MSB and convert to signed int (via two's complement)
 	int16_t roll = (int16_t) (IMU->gyroBytes[1] << 8 | IMU->gyroBytes[0]);
 	int16_t pitch = (int16_t) (IMU->gyroBytes[3] << 8 | IMU->gyroBytes[2]);
@@ -98,4 +97,3 @@ void computeGyro(LSM* IMU) {
 	IMU->gyro[1] = pitch/GYRO_SENS_245DPS;
 	IMU->gyro[2] = yaw/GYRO_SENS_245DPS;
 }
-

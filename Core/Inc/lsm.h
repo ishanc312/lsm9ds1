@@ -5,8 +5,8 @@
  *      Author: ishanchitale
  */
 
-#ifndef INC_LMS_H_
-#define INC_LMS_H_
+#ifndef INC_LSM_H_
+#define INC_LSM_H_
 
 #include "stdint.h"
 #include "stdbool.h"
@@ -39,7 +39,7 @@ bool AG_Read(LSM* imu, uint8_t reg, uint8_t* rxData, uint16_t numBytes);
 void readXL(LSM* imu);
 void readGyro(LSM* imu);
 
-void computeAccel(LSM* imu);
-void computeGyro(LSM* imu);
+void computeRawAccel(LSM* imu);
+void computeRawGyro(LSM* imu);
 
-#endif /* INC_LMS_H_ */
+#endif /* INC_LSM_H_ */

@@ -19,11 +19,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "spi.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "lms.h"
+#include "lsm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,6 +93,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI3_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
   status_1 = Enable_XL_G(&IMU);
@@ -104,8 +106,8 @@ int main(void)
   {
 	  readXL(&IMU);
 	  readGyro(&IMU);
-	  computeAccel(&IMU);
-	  computeGyro(&IMU);
+	  computeRawAccel(&IMU);
+	  computeRawGyro(&IMU);
 
 	  HAL_Delay(250);
     /* USER CODE END WHILE */
