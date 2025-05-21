@@ -20,19 +20,47 @@
 #include "main.h"
 #include "spi.h"
 #include "gpio.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "lms.h"
+/* USER CODE END Includes */
 
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+#define AG_CS_PORT GPIOB
+#define AG_CS_PIN GPIO_PIN_6
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+bool status_1;
+bool status_2;
+
+LSM IMU;
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void computeAccel(void);
-void computeGyro(void);
+/* USER CODE BEGIN PFP */
 
-uint8_t accelBytes[6];
-uint8_t gyroBytes[6];
-uint8_t idCheck;
-#define LMS_ID 0b01101000
-int status;
-float accel[3];
-float gyro[3];
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -40,46 +68,51 @@ float gyro[3];
   */
 int main(void)
 {
-   HAL_Init();
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI3_Init();
+  /* USER CODE BEGIN 2 */
+  initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
+  status_1 = Enable_XL_G(&IMU);
+  status_2 = IdCheck(&IMU);
+  /* USER CODE END 2 */
 
-  AG_Who_Am_I(&idCheck);
-  status = Enable_XL_G();
-  if (idCheck == LMS_ID && status) {
-	  while (1) {
-		  readXL(accelBytes);
-		  readGyro(gyroBytes);
-		  computeAccel();
-		  computeGyro();
-		  HAL_Delay(1000);
-	  }
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+	  readXL(&IMU);
+	  readGyro(&IMU);
+	  computeAccel(&IMU);
+	  computeGyro(&IMU);
+
+	  HAL_Delay(250);
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
   }
-}
-
-void computeAccel() {
-	// Combine LSB & MSB and convert to signed int (via two's complement)
-	int16_t raw_x = (int16_t) (accelBytes[1] << 8 | accelBytes[0]);
-	int16_t raw_y = (int16_t) (accelBytes[3] << 8 | accelBytes[2]);
-	int16_t raw_z = (int16_t) (accelBytes[5] << 8 | accelBytes[4]);
-
-	// Divide by default sensitivity of the accelerometer
-	accel[0] = raw_x/16384.0f;
-	accel[1] = raw_y/16384.0f;
-	accel[2] = raw_z/16384.0f;
-}
-
-void computeGyro() {
-	// Combine LSB & MSB and convert to signed int (via two's complement)
-	int16_t roll = (int16_t) (gyroBytes[1] << 8 | gyroBytes[0]);
-	int16_t pitch = (int16_t) (gyroBytes[3] << 8 | gyroBytes[2]);
-	int16_t yaw = (int16_t) (gyroBytes[5] << 8 | gyroBytes[4]);
-
-	// Divide by default sensitivity of the gyroscope
-	gyro[0] = roll/8.75f;
-	gyro[1] = pitch/8.75f;
-	gyro[2] = yaw/8.75f;
+  /* USER CODE END 3 */
 }
 
 /**
