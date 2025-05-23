@@ -7,10 +7,92 @@
 
 #include "calibration.h"
 
+float maxA[3] = {1.0, 1.0, 1.0};
+float minA[3] = {-1.0, -1.0, -1.0};
+uint8_t axis_status;
+
 int _write(int file, char *data, int len) {
     HAL_UART_Transmit(&huart2, (uint8_t*)data, len, HAL_MAX_DELAY);
     return len;
 }
+
+void getRawAverageAccel(uint16_t N, LSM* imu, float* ax, float* ay, float* az) {
+	float x = 0;
+	float y = 0;
+	float z = 0;
+	for (size_t i = 0; i < N; i++) {
+		readXL(imu);
+		computeRawAccel(imu);
+		x+=(imu->accel[0]);
+		y+=(imu->accel[1]);
+		z+=(imu->accel[2]);
+		HAL_Delay(100);
+	}
+
+	*ax = x/N;
+	*ay = y/N;
+	*az = z/N;
+}
+
+bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+	float ax = 0;
+	float ay = 0;
+	float az = 0;
+	getRawAverageAccel(N, imu, &ax, &ay, &az);
+
+	uint8_t valid = 0;
+	if (fabs(ax) > fmax(fabs(ay), fabs(az)) && sqrt(ay*ay + az*az)/fabs(ax) < ACCEL_CRITERION) {
+		valid = 1;
+		if (ax > 0) {
+			// x-axis pointing upward; ~1g
+			maxA[0] = ax;
+			axis_status |= 1 << 0;
+		} else {
+			// x-axis pointing downward; ~ -1g
+			minA[0] = ax;
+			axis_status |= 1 << 3;
+		}
+	}
+
+	if (fabs(ay) > fmax(fabs(ax), fabs(az)) && sqrt(ax*ax + az*az)/fabs(ay) < ACCEL_CRITERION) {
+		valid = 1;
+		if (ay > 0) {
+			// y-axis pointing upward; ~1g
+			maxA[1] = ay;
+			axis_status |= 1 << 1;
+		} else {
+			// y-axis pointing downward; ~1g
+			minA[1] = ay;
+			axis_status |= 1 << 4;
+		}
+	}
+
+	if (fabs(az) > fmax(fabs(ax), fabs(ay)) && sqrt(ax*ax + ay*ay)/fabs(az) < ACCEL_CRITERION) {
+		valid = 1;
+		if (az > 0) {
+			// z-axis pointing upward; ~1g
+			maxA[2] = az;
+			axis_status |= 1 << 2;
+		} else {
+			// z-axis pointing downward; ~ -1g
+			minA[2] = az;
+			axis_status |= 1 << 5;
+		}
+	}
+
+	if (valid != 1) return 0;
+
+	factors->accelOffsets[0] = (maxA[0] + minA[0])/2;
+	factors->accelOffsets[1] = (maxA[1] + minA[1])/2;
+	factors->accelOffsets[2] = (maxA[2] + minA[2])/2;
+
+	factors->accelSlopes[0] = (maxA[0] - minA[0])/2;
+	factors->accelSlopes[1] = (maxA[1] - minA[1])/2;
+	factors->accelSlopes[2] = (maxA[2] - minA[2])/2;
+
+	return 1;
+}
+
 
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
 	HAL_FLASH_Unlock(); // Unlock the flash

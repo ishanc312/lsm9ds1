@@ -47,11 +47,15 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
 bool status_1;
 bool status_2;
 LSM IMU;
-CALIBRATION_CONSTANTS test_1;
-CALIBRATION_CONSTANTS test_2;
+CALIBRATION_CONSTANTS FACTORS;
+
+//CALIBRATION_CONSTANTS test_1;
+//CALIBRATION_CONSTANTS test_2;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,16 +102,18 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  test_1.accelOffsets[0] = 1;
-  test_1.accelSlopes[0] = 1;
-  test_1.gyroOffsets[0] = 1;
-  test_1.gyroSlopes[0] = 1;
-  saveCalibrationToFlash(&test_1);
-  loadCalibrationFromFlash(&test_2);
+//  test_1.accelOffsets[0] = 1;
+//  test_1.accelSlopes[0] = 1;
+//  test_1.gyroOffsets[0] = 1;
+//  test_1.gyroSlopes[0] = 1;
+//  saveCalibrationToFlash(&test_1);
+//  loadCalibrationFromFlash(&test_2);
 
-//  initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
-//  status_1 = Enable_XL_G(&IMU);
-//  status_2 = IdCheck(&IMU);
+  initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
+  status_1 = Enable_XL_G(&IMU);
+  status_2 = IdCheck(&IMU);
+
+  calibrateAccel(100, &IMU, &FACTORS);
 
   /* USER CODE END 2 */
 

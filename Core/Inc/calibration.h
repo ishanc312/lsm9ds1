@@ -12,7 +12,13 @@
 #include "usart.h"
 #include "stdio.h"
 #include "string.h"
+#include "math.h"
 #include "stm32l4xx_hal.h"
+
+extern uint8_t axis_status;
+extern float maxA[3];
+extern float minA[3];
+#define ACCEL_CRITERION 0.1
 
 int _write(int file, char *data, int len);
 
@@ -28,5 +34,8 @@ typedef struct {
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data);
 void loadCalibrationFromFlash(CALIBRATION_CONSTANTS* data);
 void clearCalibrationFlash();
+
+void getRawAverageAccel(uint16_t N, LSM* imu, float* ax, float* ay, float* az);
+bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
 
 #endif /* INC_CALIBRATION_H_ */
