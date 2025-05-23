@@ -1,3 +1,4 @@
 ../Core/Src/calibration.c:10:5:_write	1
 ../Core/Src/calibration.c:15:6:saveCalibrationToFlash	2
-../Core/Src/calibration.c:36:6:loadCalibrationFromFlash	1
+../Core/Src/calibration.c:41:6:loadCalibrationFromFlash	1
+../Core/Src/calibration.c:45:6:clearCalibrationFlash	1

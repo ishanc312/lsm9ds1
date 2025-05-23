@@ -15,6 +15,11 @@ int _write(int file, char *data, int len) {
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
 	HAL_FLASH_Unlock(); // Unlock the flash
 
+    // Clear any prior error flags
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR |
+                           FLASH_FLAG_PGSERR | FLASH_FLAG_WRPERR |
+                           FLASH_FLAG_PROGERR);
+
 	// Erase any current contents of the flash memory
 	FLASH_EraseInitTypeDef eraseConfig = {
 			.TypeErase = FLASH_TYPEERASE_PAGES,
@@ -35,4 +40,24 @@ void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
 
 void loadCalibrationFromFlash(CALIBRATION_CONSTANTS* data) {
     memcpy(data, (void *)FLASH_CALIBRATION_ADDR, sizeof(CALIBRATION_CONSTANTS));
+}
+
+void clearCalibrationFlash() {
+	HAL_FLASH_Unlock(); // Unlock the flash
+
+    // Clear any prior error flags
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR |
+                           FLASH_FLAG_PGSERR | FLASH_FLAG_WRPERR |
+                           FLASH_FLAG_PROGERR);
+
+	// Erase any current contents of the flash memory
+	FLASH_EraseInitTypeDef eraseConfig = {
+			.TypeErase = FLASH_TYPEERASE_PAGES,
+		    .Page = (FLASH_CALIBRATION_ADDR - FLASH_BASE) / FLASH_PAGE_SIZE,
+		    .NbPages = 1
+	};
+	uint32_t PageError;
+	HAL_FLASHEx_Erase(&eraseConfig, &PageError);
+
+	HAL_FLASH_Lock();
 }

@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lsm.h"
+#include "calibration.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,8 +49,9 @@
 /* USER CODE BEGIN PV */
 bool status_1;
 bool status_2;
-
 LSM IMU;
+CALIBRATION_CONSTANTS test_1;
+CALIBRATION_CONSTANTS test_2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,21 +97,31 @@ int main(void)
   MX_SPI3_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
-  status_1 = Enable_XL_G(&IMU);
-  status_2 = IdCheck(&IMU);
+
+  test_1.accelOffsets[0] = 1;
+  test_1.accelSlopes[0] = 1;
+  test_1.gyroOffsets[0] = 1;
+  test_1.gyroSlopes[0] = 1;
+  saveCalibrationToFlash(&test_1);
+  loadCalibrationFromFlash(&test_2);
+
+//  initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
+//  status_1 = Enable_XL_G(&IMU);
+//  status_2 = IdCheck(&IMU);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  readXL(&IMU);
-	  readGyro(&IMU);
-	  computeRawAccel(&IMU);
-	  computeRawGyro(&IMU);
+//	  readXL(&IMU);
+//	  readGyro(&IMU);
+//	  computeRawAccel(&IMU);
+//	  computeRawGyro(&IMU);
+//
+//	  HAL_Delay(250);
 
-	  HAL_Delay(250);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

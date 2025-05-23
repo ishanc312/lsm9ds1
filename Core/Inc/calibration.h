@@ -27,5 +27,6 @@ typedef struct {
 
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data);
 void loadCalibrationFromFlash(CALIBRATION_CONSTANTS* data);
+void clearCalibrationFlash();
 
 #endif /* INC_CALIBRATION_H_ */
