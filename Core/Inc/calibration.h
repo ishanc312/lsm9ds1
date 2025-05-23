@@ -30,6 +30,9 @@ typedef struct {
 } CALIBRATION_CONSTANTS;
 
 #define FLASH_CALIBRATION_ADDR  ((uint32_t)0x0803F800)
+#define FLASH_CALIBRATION_PAGE ((FLASH_CALIBRATION_ADDR - FLASH_BASE) / FLASH_PAGE_SIZE)
+#define CALIBRATION_MAGIC_FLAG 0xCAFEBABE
+#define FLASH_CALIBRATION_FLAG_ADDR (FLASH_CALIBRATION_ADDR + sizeof(CALIBRATION_CONSTANTS))
 
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data);
 void loadCalibrationFromFlash(CALIBRATION_CONSTANTS* data);
@@ -37,5 +40,6 @@ void clearCalibrationFlash();
 
 void getRawAverageAccel(uint16_t N, LSM* imu, float* ax, float* ay, float* az);
 bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
+void accelCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
 
 #endif /* INC_CALIBRATION_H_ */

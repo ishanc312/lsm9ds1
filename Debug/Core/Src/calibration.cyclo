@@ -1,6 +1,7 @@
 ../Core/Src/calibration.c:14:5:_write	1
 ../Core/Src/calibration.c:19:6:getRawAverageAccel	2
 ../Core/Src/calibration.c:37:6:calibrateAccel	11
-../Core/Src/calibration.c:97:6:saveCalibrationToFlash	2
-../Core/Src/calibration.c:123:6:loadCalibrationFromFlash	1
-../Core/Src/calibration.c:127:6:clearCalibrationFlash	1
+../Core/Src/calibration.c:96:6:accelCalibrationLoop	9
+../Core/Src/calibration.c:125:6:saveCalibrationToFlash	2
+../Core/Src/calibration.c:152:6:loadCalibrationFromFlash	1
+../Core/Src/calibration.c:156:6:clearCalibrationFlash	1

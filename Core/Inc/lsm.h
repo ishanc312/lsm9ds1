@@ -25,8 +25,10 @@ typedef struct LSM {
 	uint8_t accelBytes[6];
 	uint8_t gyroBytes[6];
 
-	float accel[3];
-	float gyro[3];
+	float rawAccel[3];
+	float correctedAccel[3];
+	float rawGyro[3];
+	float correctedGyro[3];
 } LSM;
 
 void initLSM(LSM* imu, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t AG_PIN);

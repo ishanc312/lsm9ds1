@@ -81,9 +81,9 @@ void computeRawAccel(LSM* IMU) {
 	int16_t raw_z = (int16_t) (IMU->accelBytes[5] << 8 | IMU->accelBytes[4]);
 
 	// Divide by default sensitivity of the IMU
-	IMU->accel[0] = raw_x/ACCEL_SENS_2G;
-	IMU->accel[1] = raw_y/ACCEL_SENS_2G;
-	IMU->accel[2] = raw_z/ACCEL_SENS_2G;
+	IMU->rawAccel[0] = raw_x/ACCEL_SENS_2G;
+	IMU->rawAccel[1] = raw_y/ACCEL_SENS_2G;
+	IMU->rawAccel[2] = raw_z/ACCEL_SENS_2G;
 }
 
 void computeRawGyro(LSM* IMU) {
@@ -93,7 +93,7 @@ void computeRawGyro(LSM* IMU) {
 	int16_t yaw = (int16_t) (IMU->gyroBytes[5] << 8 | IMU->gyroBytes[4]);
 
 	// Divide by default sensitivity of the gyroscope
-	IMU->gyro[0] = roll/GYRO_SENS_245DPS;
-	IMU->gyro[1] = pitch/GYRO_SENS_245DPS;
-	IMU->gyro[2] = yaw/GYRO_SENS_245DPS;
+	IMU->rawGyro[0] = roll/GYRO_SENS_245DPS;
+	IMU->rawGyro[1] = pitch/GYRO_SENS_245DPS;
+	IMU->rawGyro[2] = yaw/GYRO_SENS_245DPS;
 }

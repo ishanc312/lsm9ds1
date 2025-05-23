@@ -50,23 +50,36 @@
 
 bool status_1;
 bool status_2;
+bool status_3;
 LSM IMU;
 CALIBRATION_CONSTANTS FACTORS;
-
-//CALIBRATION_CONSTANTS test_1;
-//CALIBRATION_CONSTANTS test_2;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+bool isCalibrationPresent();
+void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors);
+void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+bool isCalibrationPresent() {
+    uint32_t flag = *(volatile uint32_t *)FLASH_CALIBRATION_FLAG_ADDR;
+    return (flag == CALIBRATION_MAGIC_FLAG);
+}
 
+void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
+	imu->correctedAccel[0] = (imu->rawAccel[0] - factors->accelOffsets[0])/factors->accelSlopes[0];
+	imu->correctedAccel[1] = (imu->rawAccel[1] - factors->accelOffsets[1])/factors->accelSlopes[1];
+	imu->correctedAccel[2] = (imu->rawAccel[2] - factors->accelOffsets[2])/factors->accelSlopes[2];
+}
+
+void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors) {
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -113,7 +126,13 @@ int main(void)
   status_1 = Enable_XL_G(&IMU);
   status_2 = IdCheck(&IMU);
 
-  calibrateAccel(100, &IMU, &FACTORS);
+  if (isCalibrationPresent()) {
+      loadCalibrationFromFlash(&FACTORS);
+      status_3 = 1;
+  } else {
+      accelCalibrationLoop(100, &IMU, &FACTORS);
+      status_3 = 1;
+  }
 
   /* USER CODE END 2 */
 
@@ -121,12 +140,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  readXL(&IMU);
+	  readXL(&IMU);
 //	  readGyro(&IMU);
-//	  computeRawAccel(&IMU);
+	  computeRawAccel(&IMU);
 //	  computeRawGyro(&IMU);
-//
-//	  HAL_Delay(250);
+	  computeCorrectedAccel(&IMU, &FACTORS);
+
+	  HAL_Delay(250);
 
     /* USER CODE END WHILE */
 
