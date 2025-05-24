@@ -42,4 +42,9 @@ void getRawAverageAccel(uint16_t N, LSM* imu, float* ax, float* ay, float* az);
 bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
 void accelCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
 
+void getRawAverageGyro(uint16_t N, LSM* imu, float* roll, float* pitch, float* yaw);
+void calibrateGyroOffset(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
+void calibrateGyroSlopes(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
+void gyroCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors);
+
 #endif /* INC_CALIBRATION_H_ */

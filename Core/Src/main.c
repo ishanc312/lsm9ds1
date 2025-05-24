@@ -78,7 +78,7 @@ void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
 }
 
 void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors) {
-
+	// Do some shits
 }
 /* USER CODE END 0 */
 

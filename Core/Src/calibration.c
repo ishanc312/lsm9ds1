@@ -121,6 +121,38 @@ void accelCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) 
 	saveCalibrationToFlash(factors);
 }
 
+void getRawAverageGyro(uint16_t N, LSM* imu, float* roll, float* pitch, float* yaw) {
+	float ar = 0;
+	float ap = 0;
+	float ay = 0;
+	for (size_t i = 0; i < N; i++) {
+		readGyro(imu);
+		computeRawGyro(imu);
+		ar+=(imu->rawGyro[0]);
+		ap+=(imu->rawGyro[1]);
+		ay+=(imu->rawGyro[2]);
+		HAL_Delay(100);
+	}
+
+	*roll = ar/N;
+	*pitch = ap/N;
+	*yaw = ay/N;
+}
+
+void calibrateGyroOffset(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+	float roll_o = 0;
+	float pitch_o = 0;
+	float yaw_o = 0;
+	getRawAverageGyro(N, imu, &roll_o, &pitch_o, &yaw_o);
+	factors->gyroOffsets[0] = roll_o;
+	factors->gyroOffsets[1] = pitch_o;
+	factors->gyroOffsets[2] = yaw_o;
+}
+
+void calibrateGyroSlopes(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+	// TODO
+}
+
 
 void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
 	HAL_FLASH_Unlock(); // Unlock the flash

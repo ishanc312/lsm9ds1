@@ -2,6 +2,9 @@
 ../Core/Src/calibration.c:19:6:getRawAverageAccel	40	static
 ../Core/Src/calibration.c:37:6:calibrateAccel	64	static
 ../Core/Src/calibration.c:96:6:accelCalibrationLoop	24	static
-../Core/Src/calibration.c:125:6:saveCalibrationToFlash	48	static
-../Core/Src/calibration.c:152:6:loadCalibrationFromFlash	16	static
-../Core/Src/calibration.c:156:6:clearCalibrationFlash	32	static
+../Core/Src/calibration.c:124:6:getRawAverageGyro	40	static
+../Core/Src/calibration.c:142:6:calibrateGyroOffset	48	static
+../Core/Src/calibration.c:152:6:calibrateGyroSlopes	24	static
+../Core/Src/calibration.c:157:6:saveCalibrationToFlash	48	static
+../Core/Src/calibration.c:184:6:loadCalibrationFromFlash	16	static
+../Core/Src/calibration.c:188:6:clearCalibrationFlash	32	static
