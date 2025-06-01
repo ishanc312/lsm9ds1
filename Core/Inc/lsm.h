@@ -11,11 +11,28 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "spi.h"
+#include "can.h"
 
 #define READ_FLAG 0x80
 #define LSM_ID 0b01101000
 #define ACCEL_SENS_2G  16384.0f
 #define GYRO_SENS_245DPS 8.75f
+#define IMU_NUMBER 1
+
+typedef union ACCEL_DF {
+	struct {
+		uint16_t accel_x;
+		uint16_t accel_y;
+		uint16_t accel_z;
+	} data;
+	uint8_t array[6];
+} ACCEL_DF;
+
+//typedef union GYRO_DF {
+//	struct {
+//
+//	} data;
+//} GYRO_DF;
 
 typedef struct LSM {
 	SPI_HandleTypeDef* spiInstance;
@@ -29,6 +46,9 @@ typedef struct LSM {
 	float correctedAccel[3];
 	float rawGyro[3];
 	float correctedGyro[3];
+
+	CAN_TxHeaderTypeDef ACCEL_CTXHeader;
+	ACCEL_DF accel_df;
 } LSM;
 
 void initLSM(LSM* imu, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t AG_PIN);

@@ -176,6 +176,8 @@ void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
     for (uint32_t i = 0; i < sizeof(CALIBRATION_CONSTANTS) / 8; i++) {
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_CALIBRATION_ADDR + i * 8, src[i]);
     }
+
+    // Should probably add two flags: for ACCEL Calibration, and for GYRO Calibration
     HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_CALIBRATION_FLAG_ADDR, CALIBRATION_MAGIC_FLAG);
 
     HAL_FLASH_Lock(); // Lock the flash once more

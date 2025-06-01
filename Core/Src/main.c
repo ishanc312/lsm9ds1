@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "can.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -54,6 +55,9 @@ bool status_3;
 LSM IMU;
 CALIBRATION_CONSTANTS FACTORS;
 
+uint32_t mailbox;
+HAL_StatusTypeDef accel_tx_status;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,6 +66,8 @@ void SystemClock_Config(void);
 bool isCalibrationPresent();
 void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors);
 void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors);
+void formAccelDF(LSM* imu);
+void formGyroDF(LSM* imu);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -69,6 +75,7 @@ void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors);
 bool isCalibrationPresent() {
     uint32_t flag = *(volatile uint32_t *)FLASH_CALIBRATION_FLAG_ADDR;
     return (flag == CALIBRATION_MAGIC_FLAG);
+    // NOTE THIS CALIBRATION FLAG IS ONLY FOR ACCEL, REFACTOR LATER
 }
 
 void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
@@ -78,8 +85,16 @@ void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
 }
 
 void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors) {
-	// Do some shits
+	// TODO
 }
+
+void formAccelDF(LSM* imu) {
+	// GET 2 DECIMAL PLACES OF PRECISION
+	imu->accel_df.data.accel_x = (uint16_t)(imu->correctedAccel[0]*100);
+	imu->accel_df.data.accel_y = (uint16_t)(imu->correctedAccel[1]*100);
+	imu->accel_df.data.accel_z = (uint16_t)(imu->correctedAccel[2]*100);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -113,14 +128,10 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI3_Init();
   MX_USART2_UART_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
-//  test_1.accelOffsets[0] = 1;
-//  test_1.accelSlopes[0] = 1;
-//  test_1.gyroOffsets[0] = 1;
-//  test_1.gyroSlopes[0] = 1;
-//  saveCalibrationToFlash(&test_1);
-//  loadCalibrationFromFlash(&test_2);
+  HAL_CAN_Start(&hcan1);
 
   initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
   status_1 = Enable_XL_G(&IMU);
@@ -145,8 +156,13 @@ int main(void)
 	  computeRawAccel(&IMU);
 //	  computeRawGyro(&IMU);
 	  computeCorrectedAccel(&IMU, &FACTORS);
+// 	  computeCorrectedGyro(&IMU, &FACTORS);
 
-	  HAL_Delay(250);
+	  formAccelDF(&IMU);
+	  accel_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.ACCEL_CTXHeader),
+			  IMU.accel_df.array, &mailbox);
+
+	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 

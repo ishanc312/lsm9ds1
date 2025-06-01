@@ -13,6 +13,11 @@ void initLSM(LSM* IMU, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t A
 	IMU->AG_CS_PIN = AG_PIN;
 
 	HAL_GPIO_WritePin(IMU->AG_CS_PORT, IMU->AG_CS_PIN, GPIO_PIN_SET);
+
+	IMU->ACCEL_CTXHeader.IDE = CAN_ID_STD;
+	IMU->ACCEL_CTXHeader.StdId = (0x750 + IMU_NUMBER);
+	IMU->ACCEL_CTXHeader.RTR = CAN_RTR_DATA;
+	IMU->ACCEL_CTXHeader.DLC = 6;
 }
 
 bool Enable_XL_G(LSM* IMU) {

@@ -6,5 +6,5 @@
 ../Core/Src/calibration.c:142:6:calibrateGyroOffset	1
 ../Core/Src/calibration.c:152:6:calibrateGyroSlopes	1
 ../Core/Src/calibration.c:157:6:saveCalibrationToFlash	2
-../Core/Src/calibration.c:184:6:loadCalibrationFromFlash	1
-../Core/Src/calibration.c:188:6:clearCalibrationFlash	1
+../Core/Src/calibration.c:186:6:loadCalibrationFromFlash	1
+../Core/Src/calibration.c:190:6:clearCalibrationFlash	1
