@@ -18,6 +18,11 @@ void initLSM(LSM* IMU, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t A
 	IMU->ACCEL_CTXHeader.StdId = (0x750 + IMU_NUMBER);
 	IMU->ACCEL_CTXHeader.RTR = CAN_RTR_DATA;
 	IMU->ACCEL_CTXHeader.DLC = 6;
+
+	IMU->GYRO_CTXHeader.IDE = CAN_ID_STD;
+	IMU->GYRO_CTXHeader.StdId = (0x760 + IMU_NUMBER);
+	IMU->GYRO_CTXHeader.RTR = CAN_RTR_DATA;
+	IMU->GYRO_CTXHeader.DLC = 6;
 }
 
 bool Enable_XL_G(LSM* IMU) {

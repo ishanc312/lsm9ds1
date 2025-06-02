@@ -9,13 +9,15 @@
 
 float maxA[3] = {1.0, 1.0, 1.0};
 float minA[3] = {-1.0, -1.0, -1.0};
-uint8_t axis_status = 0;
+uint8_t accel_axis_status = 0;
+uint8_t gyro_axis_status = 0;
 
 int _write(int file, char *data, int len) {
     HAL_UART_Transmit(&huart2, (uint8_t*)data, len, HAL_MAX_DELAY);
     return len;
 }
 
+// ACCEL CALIBRATION
 void getRawAverageAccel(uint16_t N, LSM* imu, float* ax, float* ay, float* az) {
 	float x = 0;
 	float y = 0;
@@ -46,11 +48,11 @@ bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 		if (ax > 0) {
 			// x-axis pointing upward; ~1g
 			maxA[0] = ax;
-			axis_status |= 1 << 0;
+			accel_axis_status |= 1 << 0;
 		} else {
 			// x-axis pointing downward; ~ -1g
 			minA[0] = ax;
-			axis_status |= 1 << 3;
+			accel_axis_status |= 1 << 3;
 		}
 	}
 
@@ -59,11 +61,11 @@ bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 		if (ay > 0) {
 			// y-axis pointing upward; ~1g
 			maxA[1] = ay;
-			axis_status |= 1 << 1;
+			accel_axis_status |= 1 << 1;
 		} else {
 			// y-axis pointing downward; ~1g
 			minA[1] = ay;
-			axis_status |= 1 << 4;
+			accel_axis_status |= 1 << 4;
 		}
 	}
 
@@ -72,11 +74,11 @@ bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 		if (az > 0) {
 			// z-axis pointing upward; ~1g
 			maxA[2] = az;
-			axis_status |= 1 << 2;
+			accel_axis_status |= 1 << 2;
 		} else {
 			// z-axis pointing downward; ~ -1g
 			minA[2] = az;
-			axis_status |= 1 << 5;
+			accel_axis_status |= 1 << 5;
 		}
 	}
 
@@ -94,14 +96,14 @@ bool calibrateAccel(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 }
 
 void accelCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
-	while (axis_status != 0b00111111) {
+	while (accel_axis_status != 0b00111111) {
 		printf("ALREADY CALIBRATED AXES: ");
-		if (axis_status & (1 << 0)) printf("+X ");
-		if (axis_status & (1 << 1)) printf("+Y ");
-		if (axis_status & (1 << 2)) printf("+Z ");
-		if (axis_status & (1 << 3)) printf("-X ");
-		if (axis_status & (1 << 4)) printf("-Y ");
-		if (axis_status & (1 << 5)) printf("-Z ");
+		if (accel_axis_status & (1 << 0)) printf("+X ");
+		if (accel_axis_status & (1 << 1)) printf("+Y ");
+		if (accel_axis_status & (1 << 2)) printf("+Z ");
+		if (accel_axis_status & (1 << 3)) printf("-X ");
+		if (accel_axis_status & (1 << 4)) printf("-Y ");
+		if (accel_axis_status & (1 << 5)) printf("-Z ");
 		printf("\r\n");
 
 		printf("PLACE BOARD IN ORIENTATION... YOU HAVE 7 SECONDS!\r\n");
@@ -109,18 +111,19 @@ void accelCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) 
 		printf("BEGINNING CALIBRATION PROCESS...\r\n");
 		if (calibrateAccel(N, imu, factors) == 1) {
 			printf("AXIS CALIBRATED.\r\n");
-			printf("axis_status: 0x%02X\r\n", axis_status);
+			printf("axis_status: 0x%02X\r\n", accel_axis_status);
 		} else {
 			printf("PLEASE RE-ALIGN BOARD AXIS....\r\n");
 		}
 	}
 
 	printf("CALIBRATION COMPLETE: +X +Y +Z -X -Y -Z\r\n");
-	printf("axis_status: 0x%02X\r\n", axis_status);
+	printf("axis_status: 0x%02X\r\n", accel_axis_status);
 
 	saveCalibrationToFlash(factors);
 }
 
+// GYRO CALIBRATION
 void getRawAverageGyro(uint16_t N, LSM* imu, float* roll, float* pitch, float* yaw) {
 	float ar = 0;
 	float ap = 0;
@@ -139,7 +142,7 @@ void getRawAverageGyro(uint16_t N, LSM* imu, float* roll, float* pitch, float* y
 	*yaw = ay/N;
 }
 
-void calibrateGyroOffset(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+bool calibrateGyroOffset(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 	float roll_o = 0;
 	float pitch_o = 0;
 	float yaw_o = 0;
@@ -147,10 +150,109 @@ void calibrateGyroOffset(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
 	factors->gyroOffsets[0] = roll_o;
 	factors->gyroOffsets[1] = pitch_o;
 	factors->gyroOffsets[2] = yaw_o;
+
+	return 1;
 }
 
-void calibrateGyroSlopes(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
-	// TODO
+bool calibrateGyroSlopes(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+	bool validMmt = false;
+	float dirX = 0;
+	float dirY = 0;
+	float dirZ = 0;
+
+	float sigmaX2 = 0;
+	float sigmaY2 = 0;
+	float sigmaZ2 = 0;
+
+	float maxXYZ = 0;
+
+	for (size_t i = 0; i < N; i++) {
+		readGyro(imu);
+		computeRawGyro(imu);
+
+		dirX += (imu->rawGyro[0] - factors->gyroOffsets[0])/238;
+		dirY += (imu->rawGyro[1] - factors->gyroOffsets[1])/238;
+		dirZ += (imu->rawGyro[2] - factors->gyroOffsets[2])/238;
+
+		sigmaX2 += (imu->rawGyro[0]*imu->rawGyro[0]);
+		sigmaY2 += (imu->rawGyro[1]*imu->rawGyro[1]);
+		sigmaZ2 += (imu->rawGyro[2]*imu->rawGyro[2]);
+
+		float absX = fabsf(imu->rawGyro[0]), absY = fabsf(imu->rawGyro[1]), absZ = fabsf(imu->rawGyro[2]);
+		if (absX > maxXYZ) maxXYZ = absX;
+		if (absY > maxXYZ) maxXYZ = absY;
+		if (absZ > maxXYZ) maxXYZ = absZ;
+
+		HAL_Delay(100);
+	}
+
+	sigmaX2 /= N;
+	sigmaY2 /= N;
+	sigmaZ2 /= N;
+
+	dirX = fabsf(dirX);
+	dirY = fabsf(dirY);
+	dirZ = fabsf(dirZ);
+
+	if (dirX > fmaxf(dirY, dirZ)) {
+		if (sigmaY2 < GYRO_CRITERION && sigmaZ2 < GYRO_CRITERION) {
+			validMmt = true;
+            factors->gyroSlopes[0] = (float) (180.0/dirX);
+			gyro_axis_status |= 1 << 0;
+		}
+	}
+
+	if (dirY > fmaxf(dirX, dirZ)) {
+		if (sigmaX2 < GYRO_CRITERION && sigmaZ2 < GYRO_CRITERION) {
+			validMmt = true;
+			factors->gyroSlopes[1] = (float) (180.0/dirY);
+			gyro_axis_status |= 1 << 1;
+		}
+	}
+
+	if (dirZ > fmaxf(dirX, dirY)) {
+		if (sigmaX2 < GYRO_CRITERION && sigmaY2 < GYRO_CRITERION) {
+			validMmt = true;
+			factors->gyroSlopes[2] = (float) (180.0/dirZ);
+			gyro_axis_status |= 1 << 2;
+		}
+	}
+
+	if (validMmt == false) return false;
+
+	return validMmt;
+}
+
+void gyroCalibrationLoop(uint16_t N, LSM* imu, CALIBRATION_CONSTANTS* factors) {
+    if (!calibrateGyroOffset(N, imu, factors)) {
+        printf("Gyro offset calibration failed.\r\n");
+        return;
+    }
+
+	while (gyro_axis_status != 0b00000111) {
+		printf("ALREADY CALIBRATED AXES: ");
+		if (gyro_axis_status & (1 << 0)) printf("+X ");
+		if (gyro_axis_status & (1 << 1)) printf(" Y");
+		if (gyro_axis_status & (1 << 2)) printf(" Z");
+		printf("\r\n");
+
+		printf("PLACE BOARD IN ORIENTATION... YOU HAVE 5 SECONDS!\r\n");
+		HAL_Delay(7000);
+		printf("BEGINNING CALIBRATION PROCESS.... PLEASE ROTATE 180 DEGREES OVER 10 SECONDS.\r\n");
+
+		// Change this rq
+		if (calibrateGyroSlopes(N, imu, factors) == 1) {
+			printf("AXIS CALIBRATED.\r\n");
+			printf("axis_status: 0x%02X\r\n", gyro_axis_status);
+		} else {
+			printf("PLEASE RE-ALIGN BOARD AXIS...\r\n");
+		}
+	}
+
+	printf("CALIBRATION COMPLETE: X Y Z");
+	printf("axis_status: 0x%02X\r\n", gyro_axis_status);
+
+	saveCalibrationToFlash(factors);
 }
 
 
@@ -178,7 +280,8 @@ void saveCalibrationToFlash(CALIBRATION_CONSTANTS* data) {
     }
 
     // Should probably add two flags: for ACCEL Calibration, and for GYRO Calibration
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_CALIBRATION_FLAG_ADDR, CALIBRATION_MAGIC_FLAG);
+    if (accel_axis_status == 0b00111111) HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, ACCEL_CALIBRATION_FLAG_ADDR, ACCEL_MAGIC_FLAG);
+    if (gyro_axis_status == 0b00000111) HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, GYRO_CALIBRATION_FLAG_ADDR, GYRO_MAGIC_FLAG);
 
     HAL_FLASH_Lock(); // Lock the flash once more
 }

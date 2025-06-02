@@ -52,18 +52,21 @@
 bool status_1;
 bool status_2;
 bool status_3;
+bool status_4;
 LSM IMU;
 CALIBRATION_CONSTANTS FACTORS;
 
 uint32_t mailbox;
 HAL_StatusTypeDef accel_tx_status;
+HAL_StatusTypeDef gyro_tx_status;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-bool isCalibrationPresent();
+bool isAccelCalibrationPresent();
+bool isGyroCalibrationPresent();
 void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors);
 void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors);
 void formAccelDF(LSM* imu);
@@ -72,10 +75,14 @@ void formGyroDF(LSM* imu);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-bool isCalibrationPresent() {
-    uint32_t flag = *(volatile uint32_t *)FLASH_CALIBRATION_FLAG_ADDR;
-    return (flag == CALIBRATION_MAGIC_FLAG);
-    // NOTE THIS CALIBRATION FLAG IS ONLY FOR ACCEL, REFACTOR LATER
+bool isAccelCalibrationPresent() {
+    uint32_t accel_flag = *(volatile uint32_t *)ACCEL_CALIBRATION_FLAG_ADDR;
+    return (accel_flag == ACCEL_MAGIC_FLAG);
+}
+
+bool isGyroCalibrationPresent() {
+    uint32_t gyro_flag = *(volatile uint32_t *)GYRO_CALIBRATION_FLAG_ADDR;
+    return (gyro_flag == GYRO_MAGIC_FLAG);
 }
 
 void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
@@ -85,7 +92,9 @@ void computeCorrectedAccel(LSM* imu, CALIBRATION_CONSTANTS* factors) {
 }
 
 void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors) {
-	// TODO
+	imu->correctedGyro[0] = (imu->rawGyro[0] - factors->gyroOffsets[0]) * factors->gyroSlopes[0];
+	imu->correctedGyro[1] = (imu->rawGyro[1] - factors->gyroOffsets[1]) * factors->gyroSlopes[1];
+	imu->correctedGyro[2] = (imu->rawGyro[2] - factors->gyroOffsets[2]) * factors->gyroSlopes[2];
 }
 
 void formAccelDF(LSM* imu) {
@@ -93,6 +102,13 @@ void formAccelDF(LSM* imu) {
 	imu->accel_df.data.accel_x = (uint16_t)(imu->correctedAccel[0]*100);
 	imu->accel_df.data.accel_y = (uint16_t)(imu->correctedAccel[1]*100);
 	imu->accel_df.data.accel_z = (uint16_t)(imu->correctedAccel[2]*100);
+}
+
+void formGyroDF(LSM* imu) {
+	imu->gyro_df.data.roll = (uint16_t)(imu->correctedGyro[0]*100);
+	imu->gyro_df.data.pitch = (uint16_t)(imu->correctedGyro[1]*100);
+	imu->gyro_df.data.yaw = (uint16_t)(imu->correctedGyro[2]*100);
+
 }
 
 /* USER CODE END 0 */
@@ -137,12 +153,22 @@ int main(void)
   status_1 = Enable_XL_G(&IMU);
   status_2 = IdCheck(&IMU);
 
-  if (isCalibrationPresent()) {
-      loadCalibrationFromFlash(&FACTORS);
-      status_3 = 1;
+  status_3 = isAccelCalibrationPresent();
+  status_4 = isGyroCalibrationPresent();
+
+  if (status_3 && status_4) {
+	  loadCalibrationFromFlash(&FACTORS);
+  } else if (status_3 && !status_4) {
+	  gyroCalibrationLoop(100, &IMU, &FACTORS);
+	  status_4 = 1;
+  } else if (!status_3 && status_4) {
+	  accelCalibrationLoop(100, &IMU, &FACTORS);
+	  status_3 = 1;
   } else {
-      accelCalibrationLoop(100, &IMU, &FACTORS);
-      status_3 = 1;
+	  accelCalibrationLoop(100, &IMU, &FACTORS);
+	  gyroCalibrationLoop(100, &IMU, &FACTORS);
+	  status_3 = 1;
+	  status_4 = 1;
   }
 
   /* USER CODE END 2 */
@@ -152,15 +178,19 @@ int main(void)
   while (1)
   {
 	  readXL(&IMU);
-//	  readGyro(&IMU);
+	  readGyro(&IMU);
 	  computeRawAccel(&IMU);
-//	  computeRawGyro(&IMU);
+	  computeRawGyro(&IMU);
 	  computeCorrectedAccel(&IMU, &FACTORS);
-// 	  computeCorrectedGyro(&IMU, &FACTORS);
+ 	  computeCorrectedGyro(&IMU, &FACTORS);
 
 	  formAccelDF(&IMU);
 	  accel_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.ACCEL_CTXHeader),
 			  IMU.accel_df.array, &mailbox);
+
+	  formGyroDF(&IMU);
+	  gyro_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.GYRO_CTXHeader),
+			  IMU.gyro_df.array, &mailbox);
 
 	  HAL_Delay(1000);
 

@@ -28,11 +28,14 @@ typedef union ACCEL_DF {
 	uint8_t array[6];
 } ACCEL_DF;
 
-//typedef union GYRO_DF {
-//	struct {
-//
-//	} data;
-//} GYRO_DF;
+typedef union GYRO_DF {
+	struct {
+		uint16_t roll;
+		uint16_t pitch;
+		uint16_t yaw;
+	} data;
+	uint8_t array[6];
+} GYRO_DF;
 
 typedef struct LSM {
 	SPI_HandleTypeDef* spiInstance;
@@ -49,6 +52,9 @@ typedef struct LSM {
 
 	CAN_TxHeaderTypeDef ACCEL_CTXHeader;
 	ACCEL_DF accel_df;
+
+	CAN_TxHeaderTypeDef GYRO_CTXHeader;
+	GYRO_DF gyro_df;
 } LSM;
 
 void initLSM(LSM* imu, SPI_HandleTypeDef* spi, GPIO_TypeDef* AG_PORT, uint16_t AG_PIN);
