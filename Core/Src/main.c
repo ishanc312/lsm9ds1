@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "lsm.h"
 #include "calibration.h"
+#include "neo.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +60,13 @@ CALIBRATION_CONSTANTS FACTORS;
 uint32_t mailbox;
 HAL_StatusTypeDef accel_tx_status;
 HAL_StatusTypeDef gyro_tx_status;
+
+uint8_t pollPVT[8] = {0xB5, 0x62, 0x01, 0x07, 0x00, 0x00, 0x08, 0x19};
+uint8_t txData[100];
+uint8_t rxData[100];
+uint16_t len = 100;
+float coords[2];
+int gps_status;
 
 /* USER CODE END PV */
 
@@ -99,15 +107,19 @@ void computeCorrectedGyro(LSM* imu, CALIBRATION_CONSTANTS* factors) {
 
 void formAccelDF(LSM* imu) {
 	// GET 2 DECIMAL PLACES OF PRECISION
-	imu->accel_df.data.accel_x = (uint16_t)(imu->correctedAccel[0]*100);
-	imu->accel_df.data.accel_y = (uint16_t)(imu->correctedAccel[1]*100);
-	imu->accel_df.data.accel_z = (uint16_t)(imu->correctedAccel[2]*100);
+//	imu->accel_df.data.accel_x = (uint16_t)(imu->correctedAccel[0]*100);
+//	imu->accel_df.data.accel_y = (uint16_t)(imu->correctedAccel[1]*100);
+//	imu->accel_df.data.accel_z = (uint16_t)(imu->correctedAccel[2]*100);
+
+		imu->accel_df.data.accel_x = (int16_t)(imu->rawAccel[0]*100);
+		imu->accel_df.data.accel_y = (int16_t)(imu->rawAccel[1]*100);
+		imu->accel_df.data.accel_z = (int16_t)(imu->rawAccel[2]*100);
 }
 
 void formGyroDF(LSM* imu) {
-	imu->gyro_df.data.roll = (uint16_t)(imu->correctedGyro[0]*100);
-	imu->gyro_df.data.pitch = (uint16_t)(imu->correctedGyro[1]*100);
-	imu->gyro_df.data.yaw = (uint16_t)(imu->correctedGyro[2]*100);
+	imu->gyro_df.data.roll = (int16_t)(imu->correctedGyro[0]*100);
+	imu->gyro_df.data.pitch = (int16_t)(imu->correctedGyro[1]*100);
+	imu->gyro_df.data.yaw = (int16_t)(imu->correctedGyro[2]*100);
 
 }
 
@@ -149,27 +161,42 @@ int main(void)
 
   HAL_CAN_Start(&hcan1);
 
+  HAL_GPIO_WritePin(NEO_CS_PORT, NEO_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi3, pollPVT, 8, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(NEO_CS_PORT, NEO_CS_PIN, GPIO_PIN_SET);
+
+    HAL_Delay(1000);
+
+    memset(txData, 0xFF, len);
+    HAL_GPIO_WritePin(NEO_CS_PORT, NEO_CS_PIN, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi3, txData, rxData, len, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(NEO_CS_PORT, NEO_CS_PIN, GPIO_PIN_RESET);
+
+    gps_status = PVT_PARSE(rxData, coords);
+
   initLSM(&IMU, &hspi3, AG_CS_PORT, AG_CS_PIN);
   status_1 = Enable_XL_G(&IMU);
   status_2 = IdCheck(&IMU);
 
-  status_3 = isAccelCalibrationPresent();
-  status_4 = isGyroCalibrationPresent();
+//  status_3 = isAccelCalibrationPresent();
+//  status_4 = isGyroCalibrationPresent();
 
-  if (status_3 && status_4) {
-	  loadCalibrationFromFlash(&FACTORS);
-  } else if (status_3 && !status_4) {
-	  gyroCalibrationLoop(100, &IMU, &FACTORS);
-	  status_4 = 1;
-  } else if (!status_3 && status_4) {
-	  accelCalibrationLoop(100, &IMU, &FACTORS);
-	  status_3 = 1;
-  } else {
-	  accelCalibrationLoop(100, &IMU, &FACTORS);
-	  gyroCalibrationLoop(100, &IMU, &FACTORS);
-	  status_3 = 1;
-	  status_4 = 1;
-  }
+//  if (status_3 && status_4) {
+//	  loadCalibrationFromFlash(&FACTORS);
+//  } else if (status_3 && !status_4) {
+//	  gyroCalibrationLoop(100, &IMU, &FACTORS);
+//	  status_4 = 1;
+//  } else if (!status_3 && status_4) {
+//	  accelCalibrationLoop(100, &IMU, &FACTORS);
+//	  status_3 = 1;
+//  } else {
+//	  accelCalibrationLoop(100, &IMU, &FACTORS);
+//	  gyroCalibrationLoop(100, &IMU, &FACTORS);
+//	  status_3 = 1;
+//	  status_4 = 1;
+//  }
+
+  HAL_Delay(250);
 
   /* USER CODE END 2 */
 
@@ -177,23 +204,25 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  // NOW PARSE IMU DATA
+
 	  readXL(&IMU);
-	  readGyro(&IMU);
+//	  readGyro(&IMU);
 	  computeRawAccel(&IMU);
-	  computeRawGyro(&IMU);
-	  computeCorrectedAccel(&IMU, &FACTORS);
- 	  computeCorrectedGyro(&IMU, &FACTORS);
+//	  computeRawGyro(&IMU);
+
+//	  computeCorrectedAccel(&IMU, &FACTORS);
+// 	  computeCorrectedGyro(&IMU, &FACTORS);
 
 	  formAccelDF(&IMU);
 	  accel_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.ACCEL_CTXHeader),
 			  IMU.accel_df.array, &mailbox);
 
-	  formGyroDF(&IMU);
-	  gyro_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.GYRO_CTXHeader),
-			  IMU.gyro_df.array, &mailbox);
+//	  formGyroDF(&IMU);
+//	  gyro_tx_status = HAL_CAN_AddTxMessage(&hcan1, &(IMU.GYRO_CTXHeader),
+//			  IMU.gyro_df.array, &mailbox);
 
-	  HAL_Delay(1000);
-
+	  HAL_Delay(250);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

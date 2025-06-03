@@ -21,18 +21,18 @@
 
 typedef union ACCEL_DF {
 	struct {
-		uint16_t accel_x;
-		uint16_t accel_y;
-		uint16_t accel_z;
+		int16_t accel_x;
+		int16_t accel_y;
+		int16_t accel_z;
 	} data;
 	uint8_t array[6];
 } ACCEL_DF;
 
 typedef union GYRO_DF {
 	struct {
-		uint16_t roll;
-		uint16_t pitch;
-		uint16_t yaw;
+		int16_t roll;
+		int16_t pitch;
+		int16_t yaw;
 	} data;
 	uint8_t array[6];
 } GYRO_DF;

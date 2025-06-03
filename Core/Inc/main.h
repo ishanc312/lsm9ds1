@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define AG_CS_Pin GPIO_PIN_6
 #define AG_CS_GPIO_Port GPIOB
+#define GPS_CS_Pin GPIO_PIN_7
+#define GPS_CS_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
